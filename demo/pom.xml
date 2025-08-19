@@ -58,12 +58,24 @@
 			<scope>test</scope>
 		</dependency>
 
-		<!-- MAKESHIFT DATABASE SO TESTS DONT GIVE ERROR -->
 		<dependency>
-		    <groupId>com.h2database</groupId>
-		    <artifactId>h2</artifactId>
-		    <scope>test</scope>
+		  <groupId>org.flywaydb</groupId>
+		  <artifactId>flyway-core</artifactId>
+		  <scope>runtime</scope>
 		</dependency>
+
+		<dependency>
+		  <groupId>org.flywaydb</groupId>
+		  <artifactId>flyway-database-postgresql</artifactId>
+		  <scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+		  <groupId>com.h2database</groupId>
+		  <artifactId>h2</artifactId>
+		  <scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
