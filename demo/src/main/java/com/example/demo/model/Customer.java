@@ -32,6 +32,11 @@ public class Customer {
 		this.orders = orders;
 	}
 
+	public Customer(String email, String name) {
+		this.email = email;
+		this.name = name;
+	}
+
 	public Long getId() { return id; }
 	public String getEmail() { return email; }
 	public String getName() { return name; }
