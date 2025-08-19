@@ -10,4 +10,23 @@ public class OrderItemRequest {
     @NotNull(message = "Quantity is required")
     @Positive(message = "Quantity must be > 0")
     private Integer quantity;
+
+    public OrderItemRequest(String sku, Integer quantity){
+        this.sku = sku;
+        this.quantity = quantity;
+    }
+
+    public String getSku(){
+        return sku;
+    }
+    public Integer getQuantity(){
+        return quantity;
+    }
+
+    public void setSku(String sku){
+        this.sku = sku;
+    }
+    public void setQuantity(Integer quantity){
+        this.quantity = quantity;
+    }
 }

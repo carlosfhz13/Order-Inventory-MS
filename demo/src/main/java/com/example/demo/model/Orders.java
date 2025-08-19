@@ -34,7 +34,7 @@ public class Orders {
 
 	public Orders() {}
 
-	public Orders(Customer customer, String status) {
+	public Orders(Customer customer, String status, List<OrderItem> orderItem) {
 		this.customer = customer;
 		this.status = status;
 		this.orderItem = orderItem;
