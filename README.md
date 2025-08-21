@@ -1,7 +1,7 @@
 
 # Order & Inventory Management System
 
-[![Java CI](https://github.com/your-username/your-repo/actions/workflows/ci.yml/badge.svg)](https://github.com/your-username/your-repo/actions/workflows/ci.yml)
+[![Java CI](https://github.com/carlosfhz13/Order-Inventory-MS/actions/workflows/ci.yml/badge.svg)](https://github.com/carlosfhz13/Order-Inventory-MS/actions/workflows/ci.yml)
 
 A mini-Picnic style backend built with **Java 21, Spring Boot 3, PostgreSQL, Docker and Kafka**.  
 It lets customers place orders, manage inventory safely under concurrency, and demonstrates modern backend practices.
@@ -46,7 +46,7 @@ docker compose up --build
 
 The API will be available at `http://localhost:8080`.
 
-### 3. Example request
+### 2. Example request
 
 ```bash
 curl -X POST http://localhost:8080/customers \
