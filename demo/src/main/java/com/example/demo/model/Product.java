@@ -45,6 +45,13 @@ public class Product {
 		this.stock = stock;
 	}
 
+	public Product(CreateProductDto productRequest){
+		this.sku = productRequest.getSku();
+		this.name = productRequest.getName();
+		this.priceCents = productRequest.getPriceCents();
+		this.stock = productRequest.getStock();
+	}
+
 	public Long getId() { return id; }
 	public String getSku() { return sku; }
 	public String getName() { return name; }

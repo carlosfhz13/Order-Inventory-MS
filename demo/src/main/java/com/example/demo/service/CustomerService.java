@@ -7,12 +7,16 @@ import com.example.demo.CustomerRepository;
 import com.example.demo.CreateCustomer;
 import com.example.demo.Customer;
 import com.example.demo.dto.CustomerDto;
+import com.example.demo.dto.CusNameChangeDto;
 
 import java.util.Optional;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+
+import java.util.List;
+
 
 @Service
 public class CustomerService {
@@ -46,5 +50,49 @@ public class CustomerService {
     Customer c2 = new Customer(email, req.getName().trim());
     customerRepo.save(c2);
     return new CustomerDto(c2);
-  }  
+  }
+
+  @Transactional // <- one atomic unit of work
+  public CustomerDto changeName(Long id,CusNameChangeDto req) {
+    //1. Find customer(Throw NOTFOUND if not present)
+    Optional<Customer> maybeCustomer = customerRepo.findById(id);
+    if (maybeCustomer.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found for id " + id);
+    }
+    //2. Use setter to change name
+    Customer customer = maybeCustomer.get(); 
+    customer.setName(req.getName());
+    //3. Convert to Dto and return
+    return new CustomerDto(customer);
+  }
+
+  @Transactional
+  public void delete(Long id){
+    //1. Find Customer by Id(Validate existence)
+    Customer customer = customerRepo.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
+    //Check customer does not have orders
+    List<Orders> ordersForCustomer = orderRepo.findByCustomer(customer);
+    if (!ordersForCustomer.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Customer has ongoing order");
+    }
+    //2. Delete Customer
+    customerRepo.delete(customer);
+  }
+
+  @Transactional
+  public void deleteByEmail(String email){
+    //1. Find product by SKU(Validate existence)
+    Optional<Customer> c = customerRepo.findByEmail(email);
+    if (c.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Customer with email "+email+" could not be found");
+    }
+    Customer c2 = c.get();
+    //Check customer does not have orders
+    List<Orders> ordersForCustomer = orderRepo.findByCustomer(c2);
+    if (!ordersForCustomer.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.CONFLICT, "Customer has ongoing order");
+    }
+    //2. Delete product
+    customerRepo.delete(c2);
+  }
 }

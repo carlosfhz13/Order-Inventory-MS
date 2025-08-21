@@ -10,6 +10,8 @@ import com.example.demo.Customer;
 import com.example.demo.Product;
 import com.example.demo.Orders;
 import com.example.demo.OrderItem;
+import com.example.demo.dto.OrderDto;
+import com.example.demo.dto.ChangeStatusDto;
 
 import java.time.Instant;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +23,9 @@ import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+
+import java.util.Optional;
+
 
 
 
@@ -70,6 +75,78 @@ public class OrderService {
     this.idemRepo = idemRepo;
   }
 
+  //Orders requested will return id, email, Status, Price, Items
+  public List<OrderDto> getAllOrders(){
+    //1. Get all Orders from repo
+    List<Orders> allOrders = orderRepo.findAll();
+    List<OrderDto> returnOrderList = listOrdersToListOrderDto(allOrders);
+    return returnOrderList;
+  }
+
+  public OrderDto getOrderById(Long id){
+    Orders order = orderRepo.findById(id).orElse(null);
+    if (order==null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found for id " + id);
+    }
+    //Find the email
+    Customer orderCustomer = order.getCustomer();
+    String custyEmail = orderCustomer.getEmail();
+    //Find the Status
+    String status = order.getStatus();
+    //Find the Items
+    List<OrderItem> items = itemRepo.findAllByOrder(order);
+    //Find the price
+    Integer price = 0;
+    List<OrderItemDto> items2 = new ArrayList<OrderItemDto>();
+    for (OrderItem item : items) {
+      Integer sum = item.getQuantity()*(item.getProduct().getPriceCents());
+      price = price + sum;
+      items2.add(new OrderItemDto(item.getId(), item.getProduct().getSku(), item.getQuantity()));
+    }
+    price = (int) Math.round(price/100.0);
+    //Encapsulate all in OrderDto
+    //Append to List
+    return new OrderDto(order.getId(), custyEmail, status, price, items2);
+  }
+
+  public List<OrderDto> getOrdersByEmail(String email){
+    List<Orders> allOrders = orderRepo.findByCustomerEmail(email);
+    if (allOrders.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No orders found for email " + email);
+    }
+    List<OrderDto> returnOrderList = listOrdersToListOrderDto(allOrders);
+    return returnOrderList;
+  }
+
+  public List<OrderDto> listOrdersToListOrderDto(List<Orders> allOrders){
+    List<OrderDto> returnOrderList = new ArrayList<OrderDto>();
+    List<OrderItemDto> items2 = new ArrayList<OrderItemDto>();
+    //2. For each Order:
+    for (Orders theOrder : allOrders) {
+      //Find the email
+      Customer orderCustomer = theOrder.getCustomer();
+      String custyEmail = orderCustomer.getEmail();
+      //Find the Status
+      String status = theOrder.getStatus();
+      //Find the Items
+      List<OrderItem> items = itemRepo.findAllByOrder(theOrder);
+      //Find the price
+      Integer price = 0;
+      items2 = new ArrayList<OrderItemDto>();
+      for (OrderItem item : items) {
+        Integer sum = item.getQuantity()*(item.getProduct().getPriceCents());
+        price = price + sum;
+        items2.add(new OrderItemDto(item.getId(), item.getProduct().getSku(), item.getQuantity()));
+      }
+      price = (int) Math.round(price/100.0);
+      //Encapsulate all in OrderDto
+      //Append to List
+      returnOrderList.add(new OrderDto(theOrder.getId(), custyEmail, status, price, items2));
+    }
+    //3. Return List
+    return returnOrderList;
+  }
+
   @Transactional // <- one atomic unit of work
   public OrderResponse createOrder(CreateOrderRequest req,@Nullable String idemKey) {
     // 0) Idempotency check (if you’re adding it)
@@ -106,7 +183,7 @@ public class OrderService {
       idemRepo.save(new IdempotencyKey(idemKey, bodyHash, null, Instant.now()));
     }
 
-    // 1) Find-or-create customer by email
+    // 1) Find by email
     String email = req.getEmail();
     Customer c1 = customerRepo.findByEmail(email).orElse(null);
     if (c1==null) {
@@ -147,5 +224,26 @@ public class OrderService {
     // 6) Map to OrderResponse and return
     OrderResponse orderReturn = new OrderResponse(o1.getId(), "CREATED", (int) Math.round(priceTotal/100.0), items);
     return orderReturn;
+  }
+
+  @Transactional
+  public OrderDto changeStatus(Long id, ChangeStatusDto req){
+    //1. Find order with Id(Validate existence)
+    Optional<Orders> o = orderRepo.findById(id);
+    if (o.isEmpty()) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Order not found for id " + id);
+    }
+    Orders o2 = o.get();
+    //2. Validate status value
+    String status = req.getStatus();
+    if (!status.equals("CREATED") && !status.equals("CONFIRMED") && !status.equals("CANCELLED")) {
+      throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+        "Invalid status: must be CREATED, CONFIRMED, or CANCELLED");
+    }
+    //2. Use setter to modify status
+    o2.setStatus(status);
+    //4. Convert order to dto and return
+    return new OrderDto(o2);
+
   }
 }

@@ -8,6 +8,7 @@ public class ProductDto {
     private final String name;
     private final Integer priceCents;
     private final Integer stock;
+    private final Long version;
 
     public ProductDto(Product product) {
         this.id = product.getId();
@@ -15,6 +16,7 @@ public class ProductDto {
         this.name = product.getName();
         this.priceCents = product.getPriceCents();
         this.stock = product.getStock();
+        this.version = product.getVersion();
     }
 
     public Long getId() { return id; }
@@ -22,4 +24,5 @@ public class ProductDto {
     public String getName() { return name; }
     public Integer getPriceCents() { return priceCents; }
     public Integer getStock() { return stock; }
+    public Long getVersion() { return version; }
 }
