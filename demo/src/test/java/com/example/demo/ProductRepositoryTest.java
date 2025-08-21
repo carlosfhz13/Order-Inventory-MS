@@ -17,7 +17,7 @@ class ProductRepositoryTest {
     @Test
     void saveAndLoadProduct_roundTrips() {
         // TODO: 1) construct a Product (no id / version set by you)
-        Product p = new Product("SKU-001", "Demo Product", 1999, 10);
+        Product p = new Product("abc", "Demo Product", 1999, 10);
 
         // TODO: 2) save it using the repository
         Product saved = repo.save(p);
@@ -26,7 +26,7 @@ class ProductRepositoryTest {
         // - id is not null (JPA generated it)
         // - fields you set are preserved
         Assertions.assertNotNull(saved.getId());
-        Assertions.assertEquals("SKU-001", saved.getSku());
+        Assertions.assertEquals("abc", saved.getSku());
         Assertions.assertEquals(10, saved.getStock());
 
         // TODO: 4) fetch it back from the DB (by id)
@@ -46,7 +46,7 @@ class ProductRepositoryTest {
         // Goal: show @Version changes when you update and save.
 
         // TODO: 1) save a new product
-        var saved = repo.save(new Product("SKU-002", "Versioned", 500, 3));
+        var saved = repo.save(new Product("abcd", "Versioned", 500, 3));
 
         // TODO: 2) capture current version
         Long v1 = saved.getVersion();
