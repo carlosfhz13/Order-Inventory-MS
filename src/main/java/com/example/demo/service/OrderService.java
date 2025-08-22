@@ -227,7 +227,7 @@ public class OrderService {
   }
 
   @Transactional
-  public OrderDto changeStatus(Long id, ChangeStatusDto req){
+  public OrderDto changeStatus(Long id, ChangeStatusDto req){ 
     //1. Find order with Id(Validate existence)
     Optional<Orders> o = orderRepo.findById(id);
     if (o.isEmpty()) {
@@ -241,7 +241,30 @@ public class OrderService {
         "Invalid status: must be CREATED, CONFIRMED, or CANCELLED");
     }
     //2. Use setter to modify status
+    String prevStatus = o2.getStatus();
     o2.setStatus(status);
+
+    //3. Change stock based on status change
+    if ((prevStatus.equals("CREATED") || prevStatus.equals("CONFIRMED")) && status.equals("CANCELLED")) {
+      //Re-add stock
+      List<OrderItem> items = itemRepo.findAllByOrder(o2);
+      for (OrderItem item : items){
+        Product p2 = item.getProduct();
+        p2.setStock(p2.getStock() + item.getQuantity());
+      }
+    }
+    else if ((prevStatus.equals("CANCELLED")) && ( status.equals("CONFIRMED") || status.equals("CREATED"))) {
+      //Remove stock or throw error if not enough stock
+      List<OrderItem> items = itemRepo.findAllByOrder(o2);
+      for (OrderItem item : items){
+        Product p2 = item.getProduct();
+        if (p2.getStock() - item.getQuantity()<0) {
+          throw new NotEnoughStockException(p2.getId(), item.getQuantity(), p2.getStock());
+        }
+        p2.setStock(p2.getStock() - item.getQuantity());
+      }
+    }
+
     //4. Convert order to dto and return
     return new OrderDto(o2);
 

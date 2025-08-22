@@ -22,6 +22,11 @@ public class CreateOrderRequest {
         this.items = items;
     }
 
+    public CreateOrderRequest(){}
+
+    public void setEmail(String email) { this.email = email; }
+    public void setItems(List<OrderItemRequest> items) { this.items = items; }
+
     public String getEmail() { return email; }
     public List<OrderItemRequest> getItems() { return items; }
 }
