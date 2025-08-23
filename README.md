@@ -75,7 +75,7 @@ CI pipeline ensures all tests pass before merging.
 
 * [x] MVP API + DB (Week 1)
 * [x] Concurrency & consistency (Week 2)
-* [ ] Async worker with Kafka (Week 3)
+* [x] Async worker with Kafka (Week 3)
 * [ ] CI + Docker polish (Week 4)
 
 ---
