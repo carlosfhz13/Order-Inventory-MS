@@ -16,6 +16,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.kafka.core.KafkaTemplate;
+
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -30,6 +33,9 @@ class OrderControllerTest {
 
     @MockBean
     private OrderService orderService;
+
+    @MockBean
+    KafkaTemplate<String, Object> kafkaTemplate; // swallows any send() calls
 
     @Test
     void createOrder_returns201AndOrderResponse() throws Exception {

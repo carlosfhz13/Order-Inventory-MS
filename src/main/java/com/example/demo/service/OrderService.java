@@ -12,6 +12,7 @@ import com.example.demo.Orders;
 import com.example.demo.OrderItem;
 import com.example.demo.dto.OrderDto;
 import com.example.demo.dto.ChangeStatusDto;
+import com.example.demo.dto.OrderCreatedEvent;
 
 import java.time.Instant;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,9 @@ import java.security.NoSuchAlgorithmException;
 import java.nio.charset.StandardCharsets;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+
 
 import java.util.Optional;
 
@@ -41,6 +45,9 @@ public class OrderService {
   private final OrderItemRepository itemRepo;
   private final CustomerRepository customerRepo;
   private final IdempotencyKeyRepository idemRepo;
+
+  @Autowired
+  private KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate;
 
   private String hash(Object obj) {
     try {
@@ -223,6 +230,9 @@ public class OrderService {
     }
     // 6) Map to OrderResponse and return
     OrderResponse orderReturn = new OrderResponse(o1.getId(), "CREATED", (int) Math.round(priceTotal/100.0), items);
+    // 6.5) Send through Kafka
+    OrderCreatedEvent event = new OrderCreatedEvent(o1.getId(), email, (int) Math.round(priceTotal/100.0));
+    kafkaTemplate.send("order.created", String.valueOf(o1.getId()), event);
     return orderReturn;
   }
 

@@ -4,12 +4,22 @@ import org.junit.jupiter.api.*;                      // Assertions.*, @Test
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.test.context.TestPropertySource;
+
+
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.kafka.core.KafkaTemplate;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE) 
+@TestPropertySource(properties =
+  "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration")
 // ^ Use your real Postgres from application.properties (Docker). 
 // If you prefer H2 for this test, remove the annotation above.
 class ProductRepositoryTest {
+
+    @MockBean
+    KafkaTemplate<String, Object> kafkaTemplate; // swallows any send() calls
 
     @Autowired
     private ProductRepository repo;
