@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://db:5432/orderdb
+    username: dev
+    password: devpass
+  kafka:
+    bootstrap-servers: kafka:29092

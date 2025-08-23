@@ -1,87 +1,125 @@
-
 # Order & Inventory Management System
 
 [![Java CI](https://github.com/carlosfhz13/Order-Inventory-MS/actions/workflows/ci.yml/badge.svg)](https://github.com/carlosfhz13/Order-Inventory-MS/actions/workflows/ci.yml)
 
-A mini-Picnic style backend built with **Java 21, Spring Boot 3, PostgreSQL, Docker and Kafka**.  
-It lets customers place orders, manage inventory safely under concurrency, and demonstrates modern backend practices.
+A mini-Picnic style backend built with **Java 21, Spring Boot 3, PostgreSQL, Docker, and Kafka**.  
+Customers can place orders against a product catalog while stock is kept consistent under concurrency. The system also publishes `order.created` events for async processing.
 
 ---
 
-## Features
-- REST API for products & orders
-- Atomic stock reservations with **optimistic locking**
-- Order cancellation restores stock
-- OpenAPI docs (`/swagger-ui.html`)
-- Dockerized (Postgres + App + optional Kafka)
-- Continuous Integration with GitHub Actions ✅
+## How to run
 
----
-
-## Tech Stack
-- **Java 21**, **Spring Boot 3**
-- **Spring Data JPA** + **PostgreSQL**
-- **Flyway** for DB migrations
-- **JUnit 5 + MockMvc** for testing
-- **Docker / Docker Compose**
-- *(Optional)* Kafka or RabbitMQ for async events
-- **GitHub Actions** for CI
-
----
-
-## Getting Started
-
-### 1. Clone and build
-```bash
-git clone https://github.com/your-username/your-repo.git
-cd your-repo
-mvn clean verify
-
-
-### 2. Run with Docker
-
+### One command (app + deps in Docker)
 ```bash
 docker compose up --build
 ```
-
-The API will be available at `http://localhost:8080`.
-
-### 2. Example request
-
-```bash
-curl -X POST http://localhost:8080/customers \
-  -H "Content-Type: application/json" \
-  -d '{
-        "email": "alice@example.com",
-        "name": "Alice"
-      }'
-```
+This builds the app image and starts **app + Postgres + Kafka**. The app uses the `docker` profile (datasource `db:5432`, kafka `kafka:29092`).
 
 ---
 
-## Tests
+## Quick curl examples
 
-Run tests locally:
+### 1) Create an order
+Use a SKU and quantity for each item. (Make sure the product exists; e.g., a product with `sku="SKU1"` and sufficient stock.)
 
 ```bash
-mvn test
+curl -X POST http://localhost:8080/orders \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: 1a2b3c-unique-key" \
+  -d '{
+        "email": "alice@example.com",
+        "items": [
+          { "sku": "SKU1", "quantity": 2 }
+        ]
+      }'
 ```
 
-CI pipeline ensures all tests pass before merging.
+**Response (201):**
+```json
+{{
+  "id": 123,
+  "status": "CREATED",
+  "totalPriceDollars": 20,
+  "items": [{{ "sku": "SKU1", "quantity": 2 }}]
+}}
+```
+
+### 2) Cancel an order (restore stock)
+```bash
+curl -X PUT http://localhost:8080/orders/change-status/123 \
+  -H "Content-Type: application/json" \
+  -d '{ "status": "CANCELLED" }'
+```
+
+### 3) Get order by id
+```bash
+curl http://localhost:8080/orders/123
+```
+
+### 4) List orders by email
+```bash
+curl "http://localhost:8080/orders/by-email?email=alice@example.com"
+```
+
+> The API accepts an `Idempotency-Key` header on create; repeated requests with the same key will return the same response instead of creating duplicates.
+
+---
+
+## Concurrency & consistency
+
+- **Atomic stock reservation** in a single transaction when creating an order.  
+- **Optimistic locking** on `Product` (JPA `@Version`) to prevent overselling under concurrent requests; the service retries on `OptimisticLockException` a few times.
+- **Cancellation** increments stock back in the same transaction.  
+- **Tests** include a concurrent-order scenario (10 threads) to prove **no oversell** and that `final_sold + remaining_stock == initial_stock`.
+
+---
+
+## Event-driven add-on
+
+- After a successful order commit, the service **publishes `order.created`** with `{ orderId, email, total }` via Spring Kafka.
+- A consumer (`OrderCreatedConsumer`) handles the event (e.g., log/send confirmation/write projection).  
+- **Retries & DLT:** The consumer uses `@RetryableTopic(attempts = "3", backoff = @Backoff(...), dltTopicSuffix = ".DLT")`. Failed messages are retried and then routed to **`order.created.DLT`**.
+- Topics can be auto-created at startup via `NewTopic` beans (`order.created`, `order.created.DLT`).
+
+**Serialization**
+- Producer: `JsonSerializer` (sends JSON)  
+- Consumer: `ErrorHandlingDeserializer` + `JsonDeserializer` for `OrderCreatedEvent`
+
+**Integration tests**
+- Use **EmbeddedKafka** to verify publish/consume and to avoid requiring a real broker in CI.
+
+---
+
+## Tech stack
+
+- **Java 21**, **Spring Boot 3**
+- **Spring Data JPA** + **PostgreSQL** (DDL via **Flyway**)
+- **JUnit 5**, **Spring Boot Test**, **MockMvc**, **EmbeddedKafka**
+- **Docker / Docker Compose**
+- **Spring Kafka**, **Actuator**, **springdoc-openapi**
+
+---
+
+## CI
+
+GitHub Actions runs on each push/PR:
+
+- Build & tests (`mvn verify`)
+- Status badge at the top of this README
+
+[![Java CI](https://github.com/carlosfhz13/Order-Inventory-MS/actions/workflows/ci.yml/badge.svg)](https://github.com/carlosfhz13/Order-Inventory-MS/actions/workflows/ci.yml)
 
 ---
 
 ## Roadmap
 
-* [x] MVP API + DB (Week 1)
-* [x] Concurrency & consistency (Week 2)
-* [x] Async worker with Kafka (Week 3)
-* [ ] CI + Docker polish (Week 4)
+- [x] Week 1 — MVP API + DB
+- [x] Week 2 — Concurrency & consistency
+- [x] Week 3 — Async events with Kafka
+- [x] Week 4 — Docker polish, observability, docs demo GIF
 
 ---
 
 ## License
 
-MIT License — feel free to use this as a reference project.
-
-
+MIT — feel free to use this as a reference project.
