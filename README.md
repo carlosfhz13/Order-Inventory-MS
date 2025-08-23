@@ -78,8 +78,6 @@ curl "http://localhost:8080/orders/by-email?email=alice@example.com"
 
 - After a successful order commit, the service **publishes `order.created`** with `{ orderId, email, total }` via Spring Kafka.
 - A consumer (`OrderCreatedConsumer`) handles the event (e.g., log/send confirmation/write projection).  
-- **Retries & DLT:** The consumer uses `@RetryableTopic(attempts = "3", backoff = @Backoff(...), dltTopicSuffix = ".DLT")`. Failed messages are retried and then routed to **`order.created.DLT`**.
-- Topics can be auto-created at startup via `NewTopic` beans (`order.created`, `order.created.DLT`).
 
 **Serialization**
 - Producer: `JsonSerializer` (sends JSON)  
